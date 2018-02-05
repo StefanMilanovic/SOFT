@@ -79,6 +79,7 @@ def obucavanje():
 
 def prilagodiSliku(noviPodaci):
     jezgroD = np.ones((2,2),np.uint8)
+    
     jezgroE= np.ones((1,1),np.uint8)
     brIt = 1
     for n in range(0,len(noviPodaci)):
@@ -92,16 +93,15 @@ def prilagodiSliku(noviPodaci):
         ret, image_bin = cv2.threshold(podatak, 100, 255, cv2.THRESH_BINARY) 
         
         dilatacija = cv2.dilate(image_bin,jezgroD,brIt)
-        erozija = cv2.erode(image_bin,jezgroE,brIt)
+        erozija = cv2.erode(dilatacija,jezgroE,brIt)
         
-        noviPodaciKontura = kontureSlike(image_bin,noviPodaci,n)
+        noviPodaciKontura = kontureSlike(erozija,noviPodaci,n)
     #print podatak\
    
-    img = Image.fromarray(podatak)
+    #img = Image.fromarray(podatak)
+  # #img = Image.fromarray(dilatacija)
   #  img.show()
-    img = Image.fromarray(dilatacija)
-  #  img.show()
-    img = Image.fromarray(erozija)
+    #img = Image.fromarray(erozija)
     #img.show()
    # kao prvi parametar prima sliku koja se binarizuje,
    #kao drugi parametar prima prag binarizacije, 
@@ -137,6 +137,8 @@ def ucitajVideo():
     jezgro = np.ones((2,2),np.uint8)
     brojac=0 
     true = 1
+    brojevi = []
+    oz = -1 # jedinstevna identifikacija brojeva sa frejma
     snimak = "video-2.avi"
     capture = cv2.VideoCapture(snimak)
     #uzima frejm  po frejm
@@ -175,42 +177,65 @@ def ucitajVideo():
           #  print "HoughLinesP :"   
             linije =cv2.HoughLinesP (pomFrejm, 1, np.pi / 180, 40, minLineLength, maxLineGap)
             
-            a,b,c = linije.shape
-            for i in range(a):
-                cv2.line(frejm, (linije[i][0][0], linije[i][0][1]), (linije[i][0][2], linije[i][0][3]), (0, 0, 255), 3, cv2.LINE_AA)
+           # a,b,c = linije.shape
+           # for i in range(a):
+                #cv2.line(frejm, (linije[i][0][0], linije[i][0][1]), (linije[i][0][2], linije[i][0][3]), (0, 0, 255), 3, cv2.LINE_AA)
            # if brojac == 500 :
               #  img = Image.fromarray(frejm)
                 #img.show()
             
-            
-            minx = linije[len(linije)-3][0][0]#min
-            miny = linije[len(linije)-3][0][1]
-            maxx = linije[len(linije)-3][0][2]
-            maxy = linije[len(linije)-3][0][3]#max
-                                
+            #trazimo za liniju pocetnu i krajnju tacku
+            pocetakLinX = linije[0][0][0]#min
+            pocetakLinY = linije[0][0][0]
+            krajLinX = linije[0][0][0]
+            krajLinY = linije[0][0][0]#max
+                        
+
+            for j in  range(0,len(linije)):
+                x1 = linije[j][0][0]
+                x2 = linije[j][0][2]
+                y1 = linije[j][0][1]             
+                y2 = linije[j][0][3]
+          
+                if  x1 < pocetakLinX:
+                       
+                        pocetakLinX = x1
+                        pocetakLinY = y1
+                if  x2 > krajLinX:
+                        krajLinX = x2
+                        krajLinY = y2
+                if y1 < pocetakLinY :
+                    if  x1 < pocetakLinX:
+                        pocetakLinX = x1
+                        pocetakLinY = y1
+                if y2 > pocetakLinY :
+                    if  x2 > krajLinX:
+                        krajLinX = x2
+                        krajLinY = y2
            
-            for i in  range(0,len(linije)):
-                x1 = linije[i][0][0]
-                y1 = linije[i][0][1]
-                x2 = linije[i][0][2]
-                y2 = linije[i][0][3]
-                if y1 > 62 :
-                    if  x1 < minx:
-                        miny = y1
-                        minx = x1
-                    if  x2 > maxx:
-                        maxx = x2
-                        maxy = y2
-           
-            ivice = [(minx, miny), (maxx, maxy)]
-            mojaLinija = np.polyfit([minx,maxx],[miny,maxy],1)
+            ivice = [(pocetakLinX, pocetakLinY), (krajLinX, krajLinY)]
+            mojaLinija = np.polyfit([pocetakLinX,krajLinX],[pocetakLinY,krajLinY],1)
             
             
             
-            kontura = pronadjiBroj(brojac, frejm)
+            kontura = pronadjiBroj(brojac, frejm,oz)
+            
+            brSaSlike = uzmiBroj(kontura,brojac,frejm,brojevi,oz)
+            
+            #ispis za jednu sliku
             if brojac == 500 :
                 pomFrejm2 = pomFrejm
                 pomFrejm3 = frejm
+                print "Minimumi x"
+                print pocetakLinX
+                print "Minimumi y"
+                print pocetakLinY
+                print "Maksimum x"
+                print krajLinX
+                print "Maksimum y"
+                print krajLinY
+                
+            
         else:
             print "nema vise slika, broj slika:"
             print brojac
@@ -227,7 +252,7 @@ def ucitajVideo():
     cv2.destroyAllWindows()
 
 
-def pronadjiBroj(brojac,frejm):
+def pronadjiBroj(brojac,frejm,oz):
      jezgroD=np.ones((2,2))
      pocetnaSlika = frejm;
      jezgroE=np.ones((1,1));
@@ -248,14 +273,19 @@ def pronadjiBroj(brojac,frejm):
      
      
      img = slika.copy()
-    
-     kontureVrednost=[];
      
+     kontureVrednost=[];
+     oznaka =[]; # bice za svaki broj
+     sabran = False
      for kk in konture:
           koordX,koordY,sirina,visina = cv2.boundingRect(kk); 
           isecSlika=isecSlika[koordY:koordY+visina,koordX :koordX+sirina];
           pocetnaSlika = cv2.rectangle(pocetnaSlika,(koordX,koordY),(koordX+sirina,koordY+visina),(0,0,255),2)
-    
+          oznaka = [oz,(koordX+(sirina/2),koordY+(visina/2)), [visina,sirina],isecSlika,sabran,brojac]
+          #jedinstvena vr. koord sredine,velicina i slika
+          
+          kontureVrednost.append(oznaka)
+          
      if brojac == 500:# samo radi primera jedne slike
         print "Prikaz slike iscrtanih kontura"
         img = slika.copy()
@@ -278,9 +308,35 @@ def urediSliku(pomFrejm) :
     return ret, slika;
 
 
+def uzmiBroj(kontura,brojac,frejm,brojevi,oz):
+    
+    for cifra in kontura:
+        brProsli = najblizi(cifra,brojevi)
+        
+        brZaObradu = len(brProsli)
+        if brZaObradu ==0:
+            oz = oz +1;
+            cifra[0] = oz
+            cifra[4] = False # sabran
+            brojevi.append(cifra);
+        
+        elif brZaObradu==1:#    oznaka = [oz,(koordX+(sirina/2,koordY+(visina/2))), [visina,sirina],isecSlika,sabran,brojac]
+            brProsli[0][1] = cifra[1]
+            brProsli[0][5] = brojac
+            
+def najblizi(cifra, brojevi):
+    prolaziBr = []
+    for  h  in brojevi:
+        if(distance(h[1],cifra[1])<20):
+            prolaziBr.append(h)
+            print "Broj najblizi :"
+            print prolaziBr[0]
+   
+    return prolaziBr
+
 
 print "pocetak obucavanja.."
-rez = obucavanje()
+#rez = obucavanje()
 print "kraj obucavanja.."
 print"ucitavanje i obrada snimka.."
 ucitajVideo()
@@ -288,11 +344,16 @@ print"kraj ucitavanja i obrade snimka.."
 
 
 
-    
-    
-    
-    
-    
+print"test primeri.."
+n=3
+distance=[[[0]*n]*n]*n
+print distance
+print "  "
+#distance[0] = 1 #ceo red jedan postaje 1
+#distance[0][0] = 1 #prva matrica svakog reda postaje 1
+#distance[0][0][0] = 1 # pristupamo jednom broju uutar tih matrica
+distance[2][2][1] = 2
+print distance   
     
     
     
