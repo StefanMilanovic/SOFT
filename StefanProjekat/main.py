@@ -11,8 +11,14 @@ from PIL import Image
 from sklearn.datasets import fetch_mldata
 from sklearn.neighbors import KNeighborsClassifier
 from skimage import exposure
-
-from vektori import *
+from vektori import distance
+from vektori import pnt2line
+from vektori import unit
+from vektori import add
+from vektori import dot
+from vektori import scale
+from vektori import vector
+from vektori import length
 
 print "Hello world!"
 
@@ -92,10 +98,11 @@ def prilagodiSliku(noviPodaci):
         podatak = exposure.rescale_intensity(podatak, out_range=(0, 255))
         ret, image_bin = cv2.threshold(podatak, 100, 255, cv2.THRESH_BINARY) 
         
+        slika2 = image_bin
         dilatacija = cv2.dilate(image_bin,jezgroD,brIt)
         erozija = cv2.erode(dilatacija,jezgroE,brIt)
         
-        noviPodaciKontura = kontureSlike(erozija,noviPodaci,n)
+        noviPodaciKontura = kontureSlike(erozija,noviPodaci,n,slika2)
     #print podatak\
    
     #img = Image.fromarray(podatak)
@@ -109,9 +116,9 @@ def prilagodiSliku(noviPodaci):
    #poslednji parametar je tip thresholda
     return noviPodaciKontura
 
-def kontureSlike(slika,noviPodaci,n):
+def kontureSlike(slika,noviPodaci,n,slika2):
     vel = (28, 28)
-    izmSlika = slika;
+
     inCubic = cv2.INTER_CUBIC
     slika123,konture,hi =cv2.findContours(slika,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE);
    # cv2.drawContours(slika, konture, -1, (255, 0, 0), 1)
@@ -119,7 +126,7 @@ def kontureSlike(slika,noviPodaci,n):
  #   img.show()
     for idx  in konture:
         x,y,sirina,visina = cv2.boundingRect(idx);
-        isecenaSlika=izmSlika[y:y+visina,x: x+sirina]; #secemo sliku
+        isecenaSlika=slika2[y:y+visina,x: x+sirina]; #secemo sliku
         isecenaSlika =  cv2.resize(isecenaSlika, vel,inCubic  )
         
         isecenaSlika=isecenaSlika.flatten();#iz mat vektor
@@ -132,8 +139,9 @@ def kontureSlike(slika,noviPodaci,n):
 
 
 
-def ucitajVideo():
-    
+def ucitajVideo(rez):
+    zbir =0
+    print "Postavio zbir na nula"
     jezgro = np.ones((2,2),np.uint8)
     brojac=0 
     true = 1
@@ -214,14 +222,17 @@ def ucitajVideo():
                         krajLinY = y2
            
             ivice = [(pocetakLinX, pocetakLinY), (krajLinX, krajLinY)]
-            mojaLinija = np.polyfit([pocetakLinX,krajLinX],[pocetakLinY,krajLinY],1)
+            z = np.polyfit([pocetakLinX,krajLinX],[pocetakLinY,krajLinY],1)
             
-            
-            
+            mojaLinija =z,[pocetakLinX,krajLinX],[pocetakLinY,krajLinY]
             kontura = pronadjiBroj(brojac, frejm,oz)
+           
             
-            brSaSlike = uzmiBroj(kontura,brojac,frejm,brojevi,oz)
-            
+            uzmiBroj(kontura,brojac,frejm,brojevi,oz) # najbitnije da postavlja vrednost broja 
+           
+            suma=  presekIZbir(brojevi,brojac,mojaLinija,zbir,rez)
+            zbir = suma;
+           
             #ispis za jednu sliku
             if brojac == 500 :
                 pomFrejm2 = pomFrejm
@@ -234,7 +245,8 @@ def ucitajVideo():
                 print krajLinX
                 print "Maksimum y"
                 print krajLinY
-                
+                print "REZULTAT TRENUTNI frejm 500: :"
+                print zbir
             
         else:
             print "nema vise slika, broj slika:"
@@ -268,33 +280,28 @@ def pronadjiBroj(brojac,frejm,oz):
   
     #contours je lista pronađeih kontura
     #Način određivanja kontura je promenjen na spoljašnje konture: cv2.RETR_EXTERNAL
-     slika,konture,hie =cv2.findContours(slika,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE);
+     slikaNova,konture,hie =cv2.findContours(slika,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE);
              
-     
-     
-     img = slika.copy()
-     
      kontureVrednost=[];
      oznaka =[]; # bice za svaki broj
      sabran = False
      for kk in konture:
           koordX,koordY,sirina,visina = cv2.boundingRect(kk); 
-          isecSlika=isecSlika[koordY:koordY+visina,koordX :koordX+sirina];
+          isecSlika2=isecSlika[koordY:koordY+visina,koordX :koordX+sirina];
           pocetnaSlika = cv2.rectangle(pocetnaSlika,(koordX,koordY),(koordX+sirina,koordY+visina),(0,0,255),2)
-          oznaka = [oz,(koordX+(sirina/2),koordY+(visina/2)), [visina,sirina],isecSlika,sabran,brojac]
+          oznaka = [oz,(koordX+(sirina/2),koordY+(visina/2)), [visina,sirina],isecSlika2,sabran,brojac]
           #jedinstvena vr. koord sredine,velicina i slika
           
           kontureVrednost.append(oznaka)
           
      if brojac == 500:# samo radi primera jedne slike
         print "Prikaz slike iscrtanih kontura"
-        img = slika.copy()
-        cv2.drawContours(img, konture, -1, (255, 0, 0), 1)
-        img = Image.fromarray(img)
-        
-        img.show()
-        
-
+        img123 = slika.copy()
+        cv2.drawContours(img123, konture, -1, (255, 0, 0), 1)
+        img123 = Image.fromarray(img123)
+        img123.show()
+        img123 = Image.fromarray(isecSlika2)
+        img123.show()
 
      return kontureVrednost;
     
@@ -319,45 +326,99 @@ def uzmiBroj(kontura,brojac,frejm,brojevi,oz):
             cifra[0] = oz
             cifra[4] = False # sabran
             brojevi.append(cifra);
-        
+        #sta ako je vise od jednog ? 
         elif brZaObradu==1:#    oznaka = [oz,(koordX+(sirina/2,koordY+(visina/2))), [visina,sirina],isecSlika,sabran,brojac]
             brProsli[0][1] = cifra[1]
             brProsli[0][5] = brojac
-            
+    
 def najblizi(cifra, brojevi):
     prolaziBr = []
     for  h  in brojevi:
         if(distance(h[1],cifra[1])<20):
             prolaziBr.append(h)
-            print "Broj najblizi :"
-            print prolaziBr[0]
-   
-    return prolaziBr
+          
+    if len(prolaziBr)>1 : 
 
+        return najbliziDrugi(cifra,prolaziBr)
+    else:
+
+   
+        return prolaziBr
+
+
+
+def najbliziDrugi(cifra, prolaziBr):
+    minRastojanje = distance(cifra[1],prolaziBr[0][1])
+    trenutniNaj = prolaziBr[0]
+    nizNajblizih = []       
+    
+    for h in prolaziBr:
+        if(distance(h[1],cifra[1])<minRastojanje):
+            
+            minRastojanje = distance(h[1],cifra[1]) 
+            trenutniNaj = h;
+    nizNajblizih.append(trenutniNaj)
+    return nizNajblizih
+    
+def presekIZbir(brojevi,brojac,mojaLinija,zbir,rez):
+    
+    
+    for i in brojevi:
+        #print "frejm -  br[5]"
+        trajanjeBr = brojac - i[5]
+        #print brojac
+        #print i[5]
+        if(trajanjeBr <5):
+            razdaljinaBrLin = pnt2line(i[1],(mojaLinija[1][0],mojaLinija[1][1]),(mojaLinija[2][0],mojaLinija[2][1]))
+            
+            
+            if( not i[4] and razdaljinaBrLin <10):
+                i[4] = True
+                predvidjenaVrednost = prepoznajBroj(i[3],rez)
+                zbir = zbir +predvidjenaVrednost
+                #zbir = zbir+1
+                print "predvidjeno pa suma"
+                print predvidjenaVrednost
+                print zbir
+    
+    return zbir
+    
+def prepoznajBroj(isecak,rez):
+    
+    
+    dim = (28, 28)
+ 
+    obradjenaSlika = cv2.resize(isecak, dim, interpolation = cv2.INTER_CUBIC)
+
+    obradjenaSlika=obradjenaSlika.flatten();
+    obradjenaSlika = np.reshape(obradjenaSlika, (1,-1))
+    pogadjaj=rez.predict(obradjenaSlika)[0];
+    
+   
+    
+    return pogadjaj;
+   
 
 print "pocetak obucavanja.."
-#rez = obucavanje()
+rez = obucavanje()
 print "kraj obucavanja.."
 print"ucitavanje i obrada snimka.."
-ucitajVideo()
+ucitajVideo(rez)
 print"kraj ucitavanja i obrade snimka.."
 
 
 
 print"test primeri.."
 n=3
-distance=[[[0]*n]*n]*n
-print distance
+distance2=[[[0]*n]*n]*n
+print distance2
 print "  "
-#distance[0] = 1 #ceo red jedan postaje 1
-#distance[0][0] = 1 #prva matrica svakog reda postaje 1
-#distance[0][0][0] = 1 # pristupamo jednom broju uutar tih matrica
-distance[2][2][1] = 2
-print distance   
+#distance2[0] = 1 #ceo red jedan postaje 1
+#distance2[0][0] = 1 #prva matrica svakog reda postaje 1
+#distance2[0][0][0] = 1 # pristupamo jednom broju uutar tih matrica
+distance2[2][2][1] = 2
+print distance2 
     
-    
-    
-    
-    
+
     
     
