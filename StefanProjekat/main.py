@@ -13,18 +13,12 @@ from sklearn.neighbors import KNeighborsClassifier
 from skimage import exposure
 from vektori import distance
 from vektori import pnt2line
-from vektori import unit
-from vektori import add
-from vektori import dot
-from vektori import scale
-from vektori import vector
-from vektori import length
+
 
 print "Hello world!"
 
 
-def obucavanje():
-    print("Pocetak obucavanja")
+def obucavanje(): # obrada podataka i smestanje u rez koji posle koristimo u prepoznaj broj f-ji za predict 
     ucitajMnist = fetch_mldata('MNIST original')
     podaciMnist = ucitajMnist.data
     preciznost = []
@@ -40,7 +34,7 @@ def obucavanje():
     noviPodaci = podaciMnist[np.random.choice(ucitajMnist.data.shape[0],1000) ]
     lab = ucitajMnist.target.astype('int')
     noviLab = lab[np.random.choice(ucitajMnist.data.shape[0],1000) ]
-    print ("primer lab :  %d" %noviLab[2]) 
+    #print ("primer lab :  %d" %noviLab[2]) 
     kVrednost = range(1, 30, 2) #range([start], stop[, step])
     
     #range creates a list, so if you do range(1, 10000000) it creates a list in memory with 9999999 elements.
@@ -83,7 +77,7 @@ def obucavanje():
     
     
 
-def prilagodiSliku(noviPodaci):
+def prilagodiSliku(noviPodaci): # pravimo sliku koja nam odgovara za testiranje
     jezgroD = np.ones((2,2),np.uint8)
     
     jezgroE= np.ones((1,1),np.uint8)
@@ -102,7 +96,7 @@ def prilagodiSliku(noviPodaci):
         dilatacija = cv2.dilate(image_bin,jezgroD,brIt)
         erozija = cv2.erode(dilatacija,jezgroE,brIt)
         
-        noviPodaciKontura = kontureSlike(erozija,noviPodaci,n,slika2)
+        noviPodaciKontura = prilagodiSlikuDrugi(erozija,noviPodaci,n,slika2)
     #print podatak\
    
     #img = Image.fromarray(podatak)
@@ -116,7 +110,7 @@ def prilagodiSliku(noviPodaci):
    #poslednji parametar je tip thresholda
     return noviPodaciKontura
 
-def kontureSlike(slika,noviPodaci,n,slika2):
+def prilagodiSlikuDrugi(slika,noviPodaci,n,slika2): # dodatna obrada uzimamo konture, kako bi smo uzeli broj i rasirili ga 
     vel = (28, 28)
 
     inCubic = cv2.INTER_CUBIC
@@ -139,15 +133,15 @@ def kontureSlike(slika,noviPodaci,n,slika2):
 
 
 
-def ucitajVideo(rez):
+def ucitajVideo(rez): # osnova programa, ucitavanje klipa  prolazak kroz frejmove analiza i obrada svega 
     zbir =0
     print "Postavio zbir na nula"
     jezgro = np.ones((2,2),np.uint8)
     brojac=0 
     true = 1
     brojevi = []
-    oz = -1 # jedinstevna identifikacija brojeva sa frejma
-    snimak = "video-2.avi"
+    oz = -1 # jedinstevna oznaka brojeva sa frejma
+    snimak = "video-3.avi"
     capture = cv2.VideoCapture(snimak)
     #uzima frejm  po frejm
     
@@ -183,12 +177,9 @@ def ucitajVideo(rez):
             maxLineGap =2
             
           #  print "HoughLinesP :"   
-            linije =cv2.HoughLinesP (pomFrejm, 1, np.pi / 180, 40, minLineLength, maxLineGap)
+            linije =cv2.HoughLinesP (pomFrejm, 1, np.pi / 180, 40, minLineLength, maxLineGap) # Liniju detektovati korišćenjem Hough transformacije.
             
-           # a,b,c = linije.shape
-           # for i in range(a):
-                #cv2.line(frejm, (linije[i][0][0], linije[i][0][1]), (linije[i][0][2], linije[i][0][3]), (0, 0, 255), 3, cv2.LINE_AA)
-           # if brojac == 500 :
+               # if brojac == 500 :
               #  img = Image.fromarray(frejm)
                 #img.show()
             
@@ -221,14 +212,12 @@ def ucitajVideo(rez):
                         krajLinX = x2
                         krajLinY = y2
            
-            ivice = [(pocetakLinX, pocetakLinY), (krajLinX, krajLinY)]
-            z = np.polyfit([pocetakLinX,krajLinX],[pocetakLinY,krajLinY],1)
-            
-            mojaLinija =z,[pocetakLinX,krajLinX],[pocetakLinY,krajLinY]
-            kontura = pronadjiBroj(brojac, frejm,oz)
+            visak = [1,2]
+            mojaLinija =visak,[pocetakLinX,krajLinX],[pocetakLinY,krajLinY]
+            listaVrednosti = pronadjiBroj(brojac, frejm,oz)
            
             
-            uzmiBroj(kontura,brojac,frejm,brojevi,oz) # najbitnije da postavlja vrednost broja 
+            uzmiBroj(listaVrednosti,brojac,frejm,brojevi,oz) # najbitnije da postavlja vrednost broja 
            
             suma=  presekIZbir(brojevi,brojac,mojaLinija,zbir,rez)
             zbir = suma;
@@ -262,9 +251,11 @@ def ucitajVideo(rez):
     #kada smo izvukli linniju i njene ivice  formiramo jed.
     capture.release()
     cv2.destroyAllWindows()
+    return zbir,snimak;
 
 
-def pronadjiBroj(brojac,frejm,oz):
+def pronadjiBroj(brojac,frejm,oz): # sa originalnog frejma pravimo istu sliku za upotrebu i radimo na njoj transformacije
+    #uzimamo konture  svih brojeva kako bismo ih izdvojili i popunjavamo listu brojeva pronadjenih (listaVrednosti)
      jezgroD=np.ones((2,2))
      pocetnaSlika = frejm;
      jezgroE=np.ones((1,1));
@@ -274,25 +265,34 @@ def pronadjiBroj(brojac,frejm,oz):
     # img = Image.fromarray(slika)
     # img.show()
      isecSlika=slika#imam slikku izdvojenih brojeva i sada cemo uraditi konture
+   
+     
+    
      slika=cv2.dilate(slika,jezgroD,k);
      
      slika=cv2.erode(slika,jezgroE,k);
-  
+    
     #contours je lista pronađeih kontura
     #Način određivanja kontura je promenjen na spoljašnje konture: cv2.RETR_EXTERNAL
      slikaNova,konture,hie =cv2.findContours(slika,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE);
              
-     kontureVrednost=[];
-     oznaka =[]; # bice za svaki broj
+     listaVrednosti=[];
+     vrednost =[]; # bice za svaki broj
      sabran = False
      for kk in konture:
           koordX,koordY,sirina,visina = cv2.boundingRect(kk); 
           isecSlika2=isecSlika[koordY:koordY+visina,koordX :koordX+sirina];
-          pocetnaSlika = cv2.rectangle(pocetnaSlika,(koordX,koordY),(koordX+sirina,koordY+visina),(0,0,255),2)
-          oznaka = [oz,(koordX+(sirina/2),koordY+(visina/2)), [visina,sirina],isecSlika2,sabran,brojac]
+          
+          #pocetnaSlika = cv2.rectangle(pocetnaSlika,(koordX,koordY),(koordX+sirina,koordY+visina),(0,0,255),2)
+          #zaokruzi kako sta nadjes
+           
+          
+         # cv2.imshow('image',isecSlika2)      
+         # cv2.waitKey(0)
+          vrednost = [oz,(koordX+(sirina/2),koordY+(visina/2)), [visina,sirina],isecSlika2,sabran,brojac]
           #jedinstvena vr. koord sredine,velicina i slika
           
-          kontureVrednost.append(oznaka)
+          listaVrednosti.append(vrednost)
           
      if brojac == 500:# samo radi primera jedne slike
         print "Prikaz slike iscrtanih kontura"
@@ -303,10 +303,10 @@ def pronadjiBroj(brojac,frejm,oz):
         img123 = Image.fromarray(isecSlika2)
         img123.show()
 
-     return kontureVrednost;
+     return listaVrednosti;
     
     
-def urediSliku(pomFrejm) :
+def urediSliku(pomFrejm) : 
   #  gray = cv2.imread(pomFrejm,0)
       
     siviFrejm = cv2.cvtColor(pomFrejm, cv2.COLOR_BGR2GRAY) 
@@ -315,9 +315,10 @@ def urediSliku(pomFrejm) :
     return ret, slika;
 
 
-def uzmiBroj(kontura,brojac,frejm,brojevi,oz):
+def uzmiBroj(listaVrednosti,brojac,frejm,brojevi,oz): #kroz listu pronadjenih brojeva prati pomeranje kroz funkcije najblizi prvi i drugi , 
+    #poredi pozicije centra prosle i sadasnje zakljucuje koji je broj u pitanju
     
-    for cifra in kontura:
+    for cifra in listaVrednosti:
         brProsli = najblizi(cifra,brojevi)
         
         brZaObradu = len(brProsli)
@@ -331,23 +332,23 @@ def uzmiBroj(kontura,brojac,frejm,brojevi,oz):
             brProsli[0][1] = cifra[1]
             brProsli[0][5] = brojac
     
-def najblizi(cifra, brojevi):
+def najblizi(cifra, brojevi):   # gledamo pomeranje centra i trazimo najbiliz da ga prihvatimo ko isti  broj
     prolaziBr = []
     for  h  in brojevi:
         if(distance(h[1],cifra[1])<20):
             prolaziBr.append(h)
           
     if len(prolaziBr)>1 : 
-
+                
         return najbliziDrugi(cifra,prolaziBr)
     else:
 
    
-        return prolaziBr
+        return prolaziBr # vracamo ako je nasao broj koji je blizu centra ako ne vracamo prazno i tamo unosimo novi broj
 
 
 
-def najbliziDrugi(cifra, prolaziBr):
+def najbliziDrugi(cifra, prolaziBr): # za niz brojeva koji su blizu trazimo najblizi
     minRastojanje = distance(cifra[1],prolaziBr[0][1])
     trenutniNaj = prolaziBr[0]
     nizNajblizih = []       
@@ -368,44 +369,67 @@ def presekIZbir(brojevi,brojac,mojaLinija,zbir,rez):
         trajanjeBr = brojac - i[5]
         #print brojac
         #print i[5]
-        if(trajanjeBr <5):
+        if(trajanjeBr <5):#centar broj i koordinate linije          min x min y   max x maxy
             razdaljinaBrLin = pnt2line(i[1],(mojaLinija[1][0],mojaLinija[1][1]),(mojaLinija[2][0],mojaLinija[2][1]))
-            
+            #
             
             if( not i[4] and razdaljinaBrLin <10):
                 i[4] = True
                 predvidjenaVrednost = prepoznajBroj(i[3],rez)
                 zbir = zbir +predvidjenaVrednost
                 #zbir = zbir+1
-                print "predvidjeno pa suma"
+                print "slika za predvidjanje:"
+                
+                #img = cv2.imread('messi5.jpg',0) 
+               # cv2.imshow('image',i[3])
+             #   cv2.waitKey(0)
+                print "predvidjeno :"
                 print predvidjenaVrednost
+              #  cv2.waitKey(0)
+                print "zbir : "
                 print zbir
+                
     
     return zbir
     
-def prepoznajBroj(isecak,rez):
-    
-    
-    dim = (28, 28)
- 
-    obradjenaSlika = cv2.resize(isecak, dim, interpolation = cv2.INTER_CUBIC)
+def prepoznajBroj(isecak,rez): #saljemo obucen rezultat i dobijamo predikciju za isecak
+    # smestamo u drugi oblik u kom oni salju 
 
-    obradjenaSlika=obradjenaSlika.flatten();
+    velicina = (28, 28)
+ 
+    obradjenaSlika = cv2.resize(isecak, velicina, interpolation = cv2.INTER_CUBIC)
+  
+   # cv2.imshow('image',obradjenaSlika)
+   # cv2.waitKey(0)
+    obradjenaSlika=obradjenaSlika.flatten(); #Return a copy of the array collapsed into one dimension.
+    #okreces sliku na vektor 1xn
+    
     obradjenaSlika = np.reshape(obradjenaSlika, (1,-1))
+    #okreces sliku na vektor nx1
     pogadjaj=rez.predict(obradjenaSlika)[0];
     
-   
-    
+ 
     return pogadjaj;
    
+    
+def upisUFajl():
+    text_file = open("out.txt", "w")
+    text_file.write("Stefan Milanovic RA66/2014 \n")
+    text_file.write ("Suma klipa %s : %d" % (nazivKlipa, krajnjiRez) )
+    text_file.close()
+
+
 
 print "pocetak obucavanja.."
 rez = obucavanje()
 print "kraj obucavanja.."
 print"ucitavanje i obrada snimka.."
-ucitajVideo(rez)
+krajnjiRez,nazivKlipa = ucitajVideo(rez)
 print"kraj ucitavanja i obrade snimka.."
 
+print "upis u fajl.."
+upisUFajl()
+print "kraj upisa.. "
 
 
 print"test primeri.."
