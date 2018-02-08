@@ -24,7 +24,7 @@ def obucavanje(): # obrada podataka i smestanje u rez koji posle koristimo u pre
     ucitajMnist = fetch_mldata('MNIST original')
     podaciMnist = ucitajMnist.data
     preciznost = []
-    nasumicniIzbor = np.random.choice(ucitajMnist.data.shape[0],5000)
+    nasumicniIzbor = np.random.choice(ucitajMnist.data.shape[0],10000)
     nasumicniIzborTest = np.random.choice(ucitajMnist.data.shape[0],1000)
     #print grupa
     #grupe za treninranje = noviPodaci
@@ -78,11 +78,11 @@ def obucavanje(): # obrada podataka i smestanje u rez koji posle koristimo u pre
     
 
 def prilagodiSliku(noviPodaci,noviLab): # pravimo sliku koja nam odgovara za testiranje
-    jezgroD = np.ones((3,3),np.uint8)
+    jezgroD = np.ones((2,2),np.uint8)
     
     jezgroE= np.ones((1,1),np.uint8)
     brIt = 1
-    e =2
+    e =1
     for n in range(0,len(noviPodaci)):
         #privremeno za testiranje
         
@@ -138,15 +138,40 @@ def prilagodiSlikuDrugi(slika,noviPodaci,n,slika2,noviLab): # dodatna obrada uzi
 
 
 
-def ucitajVideo(rez): # osnova programa, ucitavanje klipa  prolazak kroz frejmove analiza i obrada svega 
+def ucitajVideo(rez,sumaSviVid): # osnova programa, ucitavanje klipa  prolazak kroz frejmove analiza i obrada svega 
+  for brojKlipa in range(0,10):
+    if(brojKlipa == 0):
+        snimak = "video-0.avi"
+    
+    elif(brojKlipa==1):
+        snimak = "video-1.avi"
+    elif(brojKlipa==2):
+        snimak = "video-2.avi"
+    elif(brojKlipa==3):
+        snimak = "video-3.avi"
+    elif(brojKlipa==4):
+        snimak = "video-4.avi"
+    elif(brojKlipa==5):
+        snimak = "video-5.avi"
+    elif(brojKlipa==6):
+        snimak = "video-6.avi"
+    elif(brojKlipa==7):
+        snimak = "video-7.avi"
+    elif(brojKlipa==8):
+        snimak = "video-8.avi"
+    elif(brojKlipa==9):
+        snimak = "video-9.avi"
+    
+    
     zbir =0
-    print "Postavio zbir na nula"
+    print "Postavio zbir na nula, broj snimka :"
+    print snimak
     jezgro = np.ones((2,2),np.uint8)
     brojac=0 
     true = 1
     brojevi = []
     oz = -1 # jedinstevna oznaka brojeva sa frejma
-    snimak = "video-3.avi"
+    #snimak = "video-3.avi"
     capture = cv2.VideoCapture(snimak)
     #uzima frejm  po frejm
     
@@ -249,23 +274,48 @@ def ucitajVideo(rez): # osnova programa, ucitavanje klipa  prolazak kroz frejmov
             break
     
     img = Image.fromarray(pomFrejm2)
-    img.show()
+   # img.show() #MOZE
     img = Image.fromarray(pomFrejm3)
-    img.show()
+   # img.show() #MOZE
     
     #kada smo izvukli linniju i njene ivice  formiramo jed.
     capture.release()
     cv2.destroyAllWindows()
-    return zbir,snimak;
+    print "zavrsio snimak br:"
+    print brojKlipa
+    
+    if(brojKlipa == 0):
+        sumaSviVid[0] = zbir
+    
+    elif(brojKlipa==1):
+        sumaSviVid[1] = zbir
+    elif(brojKlipa==2):
+        sumaSviVid[2] = zbir
+    elif(brojKlipa==3):
+        sumaSviVid[3] = zbir
+    elif(brojKlipa==4):
+        sumaSviVid[4] = zbir
+    elif(brojKlipa==5):
+        sumaSviVid[5] = zbir
+    elif(brojKlipa==6):
+        sumaSviVid[6] = zbir
+    elif(brojKlipa==7):
+        sumaSviVid[7] = zbir
+    elif(brojKlipa==8):
+        sumaSviVid[8] = zbir
+    elif(brojKlipa==9):
+        sumaSviVid[9] = zbir
+    
+  return zbir,snimak,sumaSviVid;
 
 
 def pronadjiBroj(brojac,frejm,oz): # sa originalnog frejma pravimo istu sliku za upotrebu i radimo na njoj transformacije
     #uzimamo konture  svih brojeva kako bismo ih izdvojili i popunjavamo listu brojeva pronadjenih (listaVrednosti)
-     jezgroD=np.ones((3,3))
+     jezgroD=np.ones((2,2))
      pocetnaSlika = frejm;
      jezgroE=np.ones((1,1));
      k =1
-     ke = 2
+     ke = 1
      ret, slika =  urediSliku(frejm)
     
     # img = Image.fromarray(slika)
@@ -305,9 +355,9 @@ def pronadjiBroj(brojac,frejm,oz): # sa originalnog frejma pravimo istu sliku za
         img123 = slika.copy()
         cv2.drawContours(img123, konture, -1, (255, 0, 0), 1)
         img123 = Image.fromarray(img123)
-        img123.show()
+       # img123.show() #MOZE
         img123 = Image.fromarray(isecSlika2)
-        img123.show()
+       # img123.show() #MOZE
 
      return listaVrednosti;
     
@@ -375,7 +425,7 @@ def presekIZbir(brojevi,brojac,mojaLinija,zbir,rez):
         trajanjeBr = brojac - i[5]
         #print brojac
         #print i[5]
-        if(trajanjeBr <5):#centar broj i koordinate linije          min x min y   max x maxy
+        if(trajanjeBr <5):#centar broj i koordinate linije          min x min y   max x max y
             razdaljinaBrLin = pnt2line(i[1],(mojaLinija[1][0],mojaLinija[1][1]),(mojaLinija[2][0],mojaLinija[2][1]))
             #
             
@@ -387,11 +437,11 @@ def presekIZbir(brojevi,brojac,mojaLinija,zbir,rez):
                 print "slika za predvidjanje:"
                 
                 #img = cv2.imread('messi5.jpg',0) 
-                cv2.imshow('image',i[3])
+              #  cv2.imshow('image',i[3])
              #   cv2.waitKey(0)
                 print "predvidjeno :"
                 print predvidjenaVrednost
-                cv2.waitKey(0)
+             #   cv2.waitKey(0) #  PRIKAZ BROJA PRE POREDJENJA ,MOZE
                 print "zbir : "
                 print zbir
                 
@@ -418,24 +468,35 @@ def prepoznajBroj(isecak,rez): #saljemo obucen rezultat i dobijamo predikciju za
     return pogadjaj;
    
     
-def upisUFajl():
+def upisUFajl(sumaSviVid):
     text_file = open("out.txt", "w")
     text_file.write("Stefan Milanovic RA66/2014 \n")
-    text_file.write ("Suma klipa %s : %d" % (nazivKlipa, krajnjiRez) )
+    text_file.write (" \nSuma klipa video-0.avi : %d" % sumaSviVid[0]) 
+    text_file.write (" \nSuma klipa video-1.avi : %d" % sumaSviVid[1]) 
+    text_file.write (" \nSuma klipa video-2.avi : %d" % sumaSviVid[2]) 
+    text_file.write (" \nSuma klipa video-3.avi : %d" % sumaSviVid[3]) 
+    text_file.write (" \nSuma klipa video-4.avi : %d" % sumaSviVid[4]) 
+    text_file.write (" \nSuma klipa video-5.avi : %d" % sumaSviVid[5]) 
+    text_file.write (" \nSuma klipa video-6.avi : %d" % sumaSviVid[6]) 
+    text_file.write (" \nSuma klipa video-7.avi : %d" % sumaSviVid[7]) 
+    text_file.write (" \nSuma klipa video-8.avi : %d" % sumaSviVid[8]) 
+    text_file.write (" \nSuma klipa video-9.avi : %d" % sumaSviVid[9]) 
+ 
     text_file.close()
-    
+
+sumaSviVid = [0,0,0,0,0,0,0,0,0,0]
 
 
 print "pocetak obucavanja.."
 rez = obucavanje()
 print "kraj obucavanja.."
 print"ucitavanje i obrada snimka.."
-krajnjiRez,nazivKlipa = ucitajVideo(rez)
+krajnjiRez,nazivKlipa,sumaSviVid = ucitajVideo(rez,sumaSviVid)
 print"kraj ucitavanja i obrade snimka.."
 
-print "upis u fajl.."
-upisUFajl()
-print "kraj upisa.. "
+upisUFajl(sumaSviVid)
+
+
 
 
 print"test primeri.."
