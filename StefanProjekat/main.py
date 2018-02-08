@@ -19,41 +19,42 @@ print "Hello world!"
 
 
 def obucavanje(): # obrada podataka i smestanje u rez koji posle koristimo u prepoznaj broj f-ji za predict 
+  
+    
     ucitajMnist = fetch_mldata('MNIST original')
     podaciMnist = ucitajMnist.data
     preciznost = []
-    
-    #print podaciMnist[1]
-    
-    #grupa random podataka za 
-   
-     # print ucitajMnist.data.shape[0]
-     
+    nasumicniIzbor = np.random.choice(ucitajMnist.data.shape[0],5000)
+    nasumicniIzborTest = np.random.choice(ucitajMnist.data.shape[0],1000)
     #print grupa
     #grupe za treninranje = noviPodaci
-    noviPodaci = podaciMnist[np.random.choice(ucitajMnist.data.shape[0],1000) ]
+    noviPodaci = podaciMnist[nasumicniIzbor]
     lab = ucitajMnist.target.astype('int')
-    noviLab = lab[np.random.choice(ucitajMnist.data.shape[0],1000) ]
+    noviLab = lab[nasumicniIzbor ]
     #print ("primer lab :  %d" %noviLab[2]) 
     kVrednost = range(1, 30, 2) #range([start], stop[, step])
     
     #range creates a list, so if you do range(1, 10000000) it creates a list in memory with 9999999 elements.
     #xrange is a sequence object that evaluates lazily.
    
-    testPodaci = podaciMnist[ np.random.choice(ucitajMnist.data.shape[0], 200)] 
-    testLab= lab[ np.random.choice(ucitajMnist.data.shape[0], 200)] 
+    testPodaci = podaciMnist[ nasumicniIzborTest] 
+    testLab= lab[ nasumicniIzborTest] 
   
     
-    for k in range (1,29,2):
-        rezultat =KNeighborsClassifier(n_neighbors=k)
-        rezultat.fit(noviPodaci,noviLab)
-        #povecavanje preciznosti
-        cilj = rezultat.score(testPodaci, testLab)
-        #print("k=%d, %.1f%%   " % (k, cilj * 100))
-       
-        preciznost.append(cilj)
-        
-    # append - adds a single element to the end of the list
+ 
+    rezultat =KNeighborsClassifier(1)
+    rezultat2 =KNeighborsClassifier(2)
+    rezultat.fit(noviPodaci,noviLab)
+    rezultat2.fit(noviPodaci,noviLab)
+    #povecavanje preciznosti
+    cilj = rezultat.score(testPodaci, testLab)
+    cilj2 = rezultat2.score(testPodaci, testLab)
+    
+    krajnjaPreciznost =  rezultat.score(testPodaci, testLab)
+    preciznost.append(cilj)
+    preciznost.append(cilj2)
+      
+    # a  ppend - adds a single element to the end of the list
     #print len(preciznost)
     pom = preciznost[0]
     najveceK =0
@@ -67,21 +68,21 @@ def obucavanje(): # obrada podataka i smestanje u rez koji posle koristimo u pre
             najveceK = i
         
     print najveceK
-
-    konacniPodaci = prilagodiSliku(noviPodaci);
+    konacniPodaci = prilagodiSliku(noviPodaci,noviLab);
     
-    rezultat = KNeighborsClassifier(n_neighbors=kVrednost[najveceK])
+    rezultat = KNeighborsClassifier(1)
     rezultat.fit(konacniPodaci, noviLab)
     
     return rezultat;
     
     
 
-def prilagodiSliku(noviPodaci): # pravimo sliku koja nam odgovara za testiranje
-    jezgroD = np.ones((2,2),np.uint8)
+def prilagodiSliku(noviPodaci,noviLab): # pravimo sliku koja nam odgovara za testiranje
+    jezgroD = np.ones((3,3),np.uint8)
     
     jezgroE= np.ones((1,1),np.uint8)
     brIt = 1
+    e =2
     for n in range(0,len(noviPodaci)):
         #privremeno za testiranje
         
@@ -94,9 +95,9 @@ def prilagodiSliku(noviPodaci): # pravimo sliku koja nam odgovara za testiranje
         
         slika2 = image_bin
         dilatacija = cv2.dilate(image_bin,jezgroD,brIt)
-        erozija = cv2.erode(dilatacija,jezgroE,brIt)
+        erozija = cv2.erode(dilatacija,jezgroE,e)
         
-        noviPodaciKontura = prilagodiSlikuDrugi(erozija,noviPodaci,n,slika2)
+        noviPodaciKontura = prilagodiSlikuDrugi(erozija,noviPodaci,n,slika2,noviLab)
     #print podatak\
    
     #img = Image.fromarray(podatak)
@@ -110,24 +111,28 @@ def prilagodiSliku(noviPodaci): # pravimo sliku koja nam odgovara za testiranje
    #poslednji parametar je tip thresholda
     return noviPodaciKontura
 
-def prilagodiSlikuDrugi(slika,noviPodaci,n,slika2): # dodatna obrada uzimamo konture, kako bi smo uzeli broj i rasirili ga 
+def prilagodiSlikuDrugi(slika,noviPodaci,n,slika2,noviLab): # dodatna obrada uzimamo konture, kako bi smo uzeli broj i rasirili ga 
     vel = (28, 28)
 
     inCubic = cv2.INTER_CUBIC
     slika123,konture,hi =cv2.findContours(slika,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE);
-   # cv2.drawContours(slika, konture, -1, (255, 0, 0), 1)
+  #  cv2.drawContours(slika, konture, -1, (255, 0, 0), 1)
   #  img = Image.fromarray(slika)
- #   img.show()
+  #  img.show()
     for idx  in konture:
         x,y,sirina,visina = cv2.boundingRect(idx);
         isecenaSlika=slika2[y:y+visina,x: x+sirina]; #secemo sliku
+       # cv2.imshow('image',isecenaSlika)
+      #  cv2.waitKey(0)
         isecenaSlika =  cv2.resize(isecenaSlika, vel,inCubic  )
-        
+       # cv2.imshow('image',isecenaSlika)
+      #  cv2.waitKey(0)
         isecenaSlika=isecenaSlika.flatten();#iz mat vektor
         isecenaSlika = np.reshape(isecenaSlika, (1,-1))
-                   
-       
+      #  print "noviLab"
+       # print noviLab[n]
         noviPodaci[n]=isecenaSlika; 
+      #  cv2.waitKey(0)
         
     return noviPodaci
 
@@ -157,9 +162,9 @@ def ucitajVideo(rez): # osnova programa, ucitavanje klipa  prolazak kroz frejmov
           #  print "ima slika"
            # print brojac
            #vadim liniju
-            lower_range = np.array([ 125,0, 0])
-            upper_range = np.array([255,100, 100])
-            pomFrejm=cv2.inRange(pomFrejm,lower_range,upper_range)
+            donjaGranica = np.array([ 125,0, 0])
+            gornjaGranica = np.array([255,100, 100])
+            pomFrejm=cv2.inRange(pomFrejm,donjaGranica,gornjaGranica)
              
             
             pomFrejm = cv2.dilate(pomFrejm,jezgro)
@@ -256,10 +261,11 @@ def ucitajVideo(rez): # osnova programa, ucitavanje klipa  prolazak kroz frejmov
 
 def pronadjiBroj(brojac,frejm,oz): # sa originalnog frejma pravimo istu sliku za upotrebu i radimo na njoj transformacije
     #uzimamo konture  svih brojeva kako bismo ih izdvojili i popunjavamo listu brojeva pronadjenih (listaVrednosti)
-     jezgroD=np.ones((2,2))
+     jezgroD=np.ones((3,3))
      pocetnaSlika = frejm;
      jezgroE=np.ones((1,1));
      k =1
+     ke = 2
      ret, slika =  urediSliku(frejm)
     
     # img = Image.fromarray(slika)
@@ -270,7 +276,7 @@ def pronadjiBroj(brojac,frejm,oz): # sa originalnog frejma pravimo istu sliku za
     
      slika=cv2.dilate(slika,jezgroD,k);
      
-     slika=cv2.erode(slika,jezgroE,k);
+     slika=cv2.erode(slika,jezgroE,ke);
     
     #contours je lista pronađeih kontura
     #Način određivanja kontura je promenjen na spoljašnje konture: cv2.RETR_EXTERNAL
@@ -381,11 +387,11 @@ def presekIZbir(brojevi,brojac,mojaLinija,zbir,rez):
                 print "slika za predvidjanje:"
                 
                 #img = cv2.imread('messi5.jpg',0) 
-               # cv2.imshow('image',i[3])
+                cv2.imshow('image',i[3])
              #   cv2.waitKey(0)
                 print "predvidjeno :"
                 print predvidjenaVrednost
-              #  cv2.waitKey(0)
+                cv2.waitKey(0)
                 print "zbir : "
                 print zbir
                 
@@ -400,7 +406,7 @@ def prepoznajBroj(isecak,rez): #saljemo obucen rezultat i dobijamo predikciju za
     obradjenaSlika = cv2.resize(isecak, velicina, interpolation = cv2.INTER_CUBIC)
   
    # cv2.imshow('image',obradjenaSlika)
-   # cv2.waitKey(0)
+    #cv2.waitKey(0)
     obradjenaSlika=obradjenaSlika.flatten(); #Return a copy of the array collapsed into one dimension.
     #okreces sliku na vektor 1xn
     
@@ -417,7 +423,7 @@ def upisUFajl():
     text_file.write("Stefan Milanovic RA66/2014 \n")
     text_file.write ("Suma klipa %s : %d" % (nazivKlipa, krajnjiRez) )
     text_file.close()
-
+    
 
 
 print "pocetak obucavanja.."
