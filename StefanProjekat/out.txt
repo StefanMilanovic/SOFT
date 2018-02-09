@@ -1,12 +1,12 @@
 Stefan Milanovic RA66/2014 
- 
-Suma klipa video-0.avi : 22 
-Suma klipa video-1.avi : 56 
-Suma klipa video-2.avi : 56 
-Suma klipa video-3.avi : 61 
-Suma klipa video-4.avi : 57 
-Suma klipa video-5.avi : 61 
-Suma klipa video-6.avi : 55 
-Suma klipa video-7.avi : 70 
-Suma klipa video-8.avi : 57 
-Suma klipa video-9.avi : 59
+file    sum
+video-0.avi    25 
+video-1.avi    61 
+video-2.avi    50 
+video-3.avi    67 
+video-4.avi    54 
+video-5.avi    75 
+video-6.avi    59 
+video-7.avi    79 
+video-8.avi    78 
+video-9.avi    59
