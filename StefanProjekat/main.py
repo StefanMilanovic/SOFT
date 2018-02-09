@@ -24,33 +24,32 @@ def obucavanje(): # obrada podataka i smestanje u rez koji posle koristimo u pre
     ucitajMnist = fetch_mldata('MNIST original')
     podaciMnist = ucitajMnist.data
     preciznost = []
-    nasumicniIzbor = np.random.choice(ucitajMnist.data.shape[0],10000)
+    nasumicniIzbor = np.random.choice(ucitajMnist.data.shape[0],25000)
     nasumicniIzborTest = np.random.choice(ucitajMnist.data.shape[0],1000)
     #print grupa
     #grupe za treninranje = noviPodaci
     noviPodaci = podaciMnist[nasumicniIzbor]
-    lab = ucitajMnist.target.astype('int')
-    noviLab = lab[nasumicniIzbor ]
+    brojj = ucitajMnist.target.astype('int') # predstavlja labelu koja sadrzi oznaku broja sa slike 
+    noviBrojj = brojj[nasumicniIzbor ]
     #print ("primer lab :  %d" %noviLab[2]) 
-    kVrednost = range(1, 30, 2) #range([start], stop[, step])
+    #range([start], stop[, step])
     
     #range creates a list, so if you do range(1, 10000000) it creates a list in memory with 9999999 elements.
     #xrange is a sequence object that evaluates lazily.
    
     testPodaci = podaciMnist[ nasumicniIzborTest] 
-    testLab= lab[ nasumicniIzborTest] 
-  
-    
+    testBrojj= brojj[ nasumicniIzborTest] 
+ 
  
     rezultat =KNeighborsClassifier(1)
     rezultat2 =KNeighborsClassifier(2)
-    rezultat.fit(noviPodaci,noviLab)
-    rezultat2.fit(noviPodaci,noviLab)
+    rezultat.fit(noviPodaci,noviBrojj)
+    rezultat2.fit(noviPodaci,noviBrojj)
     #povecavanje preciznosti
-    cilj = rezultat.score(testPodaci, testLab)
-    cilj2 = rezultat2.score(testPodaci, testLab)
+    cilj = rezultat.score(testPodaci, testBrojj)
+    cilj2 = rezultat2.score(testPodaci, testBrojj)
     
-    krajnjaPreciznost =  rezultat.score(testPodaci, testLab)
+   # krajnjaPreciznost =  rezultat.score(testPodaci, testBrojj) DO POSLEDNJE VERZIJE
     preciznost.append(cilj)
     preciznost.append(cilj2)
       
@@ -68,10 +67,10 @@ def obucavanje(): # obrada podataka i smestanje u rez koji posle koristimo u pre
             najveceK = i
         
     print najveceK
-    konacniPodaci = prilagodiSliku(noviPodaci,noviLab);
+    konacniPodaci = prilagodiSliku(noviPodaci,noviBrojj);
     
     rezultat = KNeighborsClassifier(1)
-    rezultat.fit(konacniPodaci, noviLab)
+    rezultat.fit(konacniPodaci, noviBrojj)
     
     return rezultat;
     
@@ -85,8 +84,7 @@ def prilagodiSliku(noviPodaci,noviLab): # pravimo sliku koja nam odgovara za tes
     e =1
     for n in range(0,len(noviPodaci)):
         #privremeno za testiranje
-        
-    #for n in range(0,3):
+
         podatak = noviPodaci[n].reshape((28,28)).astype("uint8")
        # exposure.rescale_intensity - Return image after stretching or shrinking its intensity levels.
 
@@ -98,11 +96,7 @@ def prilagodiSliku(noviPodaci,noviLab): # pravimo sliku koja nam odgovara za tes
         erozija = cv2.erode(dilatacija,jezgroE,e)
         
         noviPodaciKontura = prilagodiSlikuDrugi(erozija,noviPodaci,n,slika2,noviLab)
-    #print podatak\
-   
-    #img = Image.fromarray(podatak)
-  # #img = Image.fromarray(dilatacija)
-  #  img.show()
+  
     #img = Image.fromarray(erozija)
     #img.show()
    # kao prvi parametar prima sliku koja se binarizuje,
@@ -220,27 +214,27 @@ def ucitajVideo(rez,sumaSviVid): # osnova programa, ucitavanje klipa  prolazak k
             krajLinY = linije[0][0][0]#max
                         
 
-            for j in  range(0,len(linije)):
-                x1 = linije[j][0][0]
-                x2 = linije[j][0][2]
-                y1 = linije[j][0][1]             
-                y2 = linije[j][0][3]
+            for j in  range(0,len(linije)):#trazimo koordinte  pocetne i krajnje tacke linije 
+                pomxp = linije[j][0][0]
+                pomxd = linije[j][0][2]
+                pomyp = linije[j][0][1]             
+                pomyd = linije[j][0][3]
           
-                if  x1 < pocetakLinX:
+                if  pomxp < pocetakLinX:
                        
-                        pocetakLinX = x1
-                        pocetakLinY = y1
-                if  x2 > krajLinX:
-                        krajLinX = x2
-                        krajLinY = y2
-                if y1 < pocetakLinY :
-                    if  x1 < pocetakLinX:
-                        pocetakLinX = x1
-                        pocetakLinY = y1
-                if y2 > pocetakLinY :
-                    if  x2 > krajLinX:
-                        krajLinX = x2
-                        krajLinY = y2
+                        pocetakLinX = pomxp
+                        pocetakLinY = pomyp
+                if  pomxd > krajLinX:
+                        krajLinX = pomxd
+                        krajLinY = pomyd
+                if pomyp < pocetakLinY :
+                    if  pomxp < pocetakLinX:
+                        pocetakLinX = pomxp
+                        pocetakLinY = pomyp
+                if pomyd > pocetakLinY :
+                    if  pomxd > krajLinX:
+                        krajLinX = pomxd
+                        krajLinY = pomyd
            
             visak = [1,2]
             mojaLinija =visak,[pocetakLinX,krajLinX],[pocetakLinY,krajLinY]
@@ -254,8 +248,8 @@ def ucitajVideo(rez,sumaSviVid): # osnova programa, ucitavanje klipa  prolazak k
            
             #ispis za jednu sliku
             if brojac == 500 :
-                pomFrejm2 = pomFrejm
-                pomFrejm3 = frejm
+               # pomFrejm2 = pomFrejm #MOZE
+               # pomFrejm3 = frejm #MOZE
                 print "Minimumi x"
                 print pocetakLinX
                 print "Minimumi y"
@@ -264,8 +258,7 @@ def ucitajVideo(rez,sumaSviVid): # osnova programa, ucitavanje klipa  prolazak k
                 print krajLinX
                 print "Maksimum y"
                 print krajLinY
-                print "REZULTAT TRENUTNI frejm 500: :"
-                print zbir
+              
             
         else:
             print "nema vise slika, broj slika:"
@@ -273,9 +266,9 @@ def ucitajVideo(rez,sumaSviVid): # osnova programa, ucitavanje klipa  prolazak k
             
             break
     
-    img = Image.fromarray(pomFrejm2)
+  #  img = Image.fromarray(pomFrejm2) #MOZE
    # img.show() #MOZE
-    img = Image.fromarray(pomFrejm3)
+    #img = Image.fromarray(pomFrejm3) #MOZE
    # img.show() #MOZE
     
     #kada smo izvukli linniju i njene ivice  formiramo jed.
@@ -312,7 +305,7 @@ def ucitajVideo(rez,sumaSviVid): # osnova programa, ucitavanje klipa  prolazak k
 def pronadjiBroj(brojac,frejm,oz): # sa originalnog frejma pravimo istu sliku za upotrebu i radimo na njoj transformacije
     #uzimamo konture  svih brojeva kako bismo ih izdvojili i popunjavamo listu brojeva pronadjenih (listaVrednosti)
      jezgroD=np.ones((2,2))
-     pocetnaSlika = frejm;
+    # pocetnaSlika = frejm; # DO POSLEDNJE VERZIJE
      jezgroE=np.ones((1,1));
      k =1
      ke = 1
@@ -321,11 +314,8 @@ def pronadjiBroj(brojac,frejm,oz): # sa originalnog frejma pravimo istu sliku za
     # img = Image.fromarray(slika)
     # img.show()
      isecSlika=slika#imam slikku izdvojenih brojeva i sada cemo uraditi konture
-   
-     
-    
-     slika=cv2.dilate(slika,jezgroD,k);
-     
+ 
+     slika=cv2.dilate(slika,jezgroD,k);    
      slika=cv2.erode(slika,jezgroE,ke);
     
     #contours je lista pronađeih kontura
@@ -341,8 +331,7 @@ def pronadjiBroj(brojac,frejm,oz): # sa originalnog frejma pravimo istu sliku za
           
           #pocetnaSlika = cv2.rectangle(pocetnaSlika,(koordX,koordY),(koordX+sirina,koordY+visina),(0,0,255),2)
           #zaokruzi kako sta nadjes
-           
-          
+         
          # cv2.imshow('image',isecSlika2)      
          # cv2.waitKey(0)
           vrednost = [oz,(koordX+(sirina/2),koordY+(visina/2)), [visina,sirina],isecSlika2,sabran,brojac]
@@ -391,15 +380,13 @@ def uzmiBroj(listaVrednosti,brojac,frejm,brojevi,oz): #kroz listu pronadjenih br
 def najblizi(cifra, brojevi):   # gledamo pomeranje centra i trazimo najbiliz da ga prihvatimo ko isti  broj
     prolaziBr = []
     for  h  in brojevi:
-        if(distance(h[1],cifra[1])<20):
+        if(distance(h[1],cifra[1])<15):
             prolaziBr.append(h)
           
     if len(prolaziBr)>1 : 
                 
         return najbliziDrugi(cifra,prolaziBr)
     else:
-
-   
         return prolaziBr # vracamo ako je nasao broj koji je blizu centra ako ne vracamo prazno i tamo unosimo novi broj
 
 
@@ -433,7 +420,6 @@ def presekIZbir(brojevi,brojac,mojaLinija,zbir,rez):
                 i[4] = True
                 predvidjenaVrednost = prepoznajBroj(i[3],rez)
                 zbir = zbir +predvidjenaVrednost
-                #zbir = zbir+1
                 print "slika za predvidjanje:"
                 
                 #img = cv2.imread('messi5.jpg',0) 
@@ -451,20 +437,15 @@ def presekIZbir(brojevi,brojac,mojaLinija,zbir,rez):
 def prepoznajBroj(isecak,rez): #saljemo obucen rezultat i dobijamo predikciju za isecak
     # smestamo u drugi oblik u kom oni salju 
 
-    velicina = (28, 28)
- 
-    obradjenaSlika = cv2.resize(isecak, velicina, interpolation = cv2.INTER_CUBIC)
-  
+    velicina = (28, 28) 
+    obradjenaSlika = cv2.resize(isecak, velicina, interpolation = cv2.INTER_CUBIC)  
    # cv2.imshow('image',obradjenaSlika)
     #cv2.waitKey(0)
     obradjenaSlika=obradjenaSlika.flatten(); #Return a copy of the array collapsed into one dimension.
-    #okreces sliku na vektor 1xn
-    
+    #okreces sliku na vektor 1xn   
     obradjenaSlika = np.reshape(obradjenaSlika, (1,-1))
     #okreces sliku na vektor nx1
     pogadjaj=rez.predict(obradjenaSlika)[0];
-    
- 
     return pogadjaj;
    
     
