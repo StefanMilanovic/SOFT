@@ -65,8 +65,14 @@ def obucavanje(): # obrada podataka i smestanje u rez koji posle koristimo u pre
         if (preciznost[i] >pom) :
             pom = preciznost[i]
             najveceK = i
-        
-    print najveceK
+            for nekoI in range(0, 10):
+                rezerva = i
+               # print " preciznosti "
+               #print preciznost[i]
+                if preciznost[i] > pom:
+                    #print "uspesno"
+                    rezerva = i
+
     konacniPodaci = prilagodiSliku(noviPodaci,noviBrojj);
     
     rezultat = KNeighborsClassifier(1)
@@ -113,11 +119,11 @@ def prilagodiSlikuDrugi(slika,noviPodaci,n,slika2,noviLab): # dodatna obrada uzi
   #  cv2.drawContours(slika, konture, -1, (255, 0, 0), 1)
   #  img = Image.fromarray(slika)
   #  img.show()
-    for idx  in konture:
-        x,y,sirina,visina = cv2.boundingRect(idx);
+    for fff  in konture:
+        x,y,sirina,visina = cv2.boundingRect(fff);
         isecenaSlika=slika2[y:y+visina,x: x+sirina]; #secemo sliku
        # cv2.imshow('image',isecenaSlika)
-      #  cv2.waitKey(0)
+      #  cv2.waitKey(0)s
         isecenaSlika =  cv2.resize(isecenaSlika, vel,inCubic  )
        # cv2.imshow('image',isecenaSlika)
       #  cv2.waitKey(0)
@@ -163,7 +169,7 @@ def ucitajVideo(rez,sumaSviVid): # osnova programa, ucitavanje klipa  prolazak k
     jezgro = np.ones((2,2),np.uint8)
     brojac=0 
     true = 1
-    brojevi = []
+    listaCifara = []
     oz = -1 # jedinstevna oznaka brojeva sa frejma
     #snimak = "video-3.avi"
     capture = cv2.VideoCapture(snimak)
@@ -221,13 +227,16 @@ def ucitajVideo(rez,sumaSviVid): # osnova programa, ucitavanje klipa  prolazak k
                 pomyd = linije[j][0][3]
           
                 if  pomxp < pocetakLinX:
-                       
+
+                        for nekoI in range(1, 3):
+                            rezerva = pomxp
                         pocetakLinX = pomxp
                         pocetakLinY = pomyp
                 if  pomxd > krajLinX:
                         krajLinX = pomxd
                         krajLinY = pomyd
                 if pomyp < pocetakLinY :
+
                     if  pomxp < pocetakLinX:
                         pocetakLinX = pomxp
                         pocetakLinY = pomyp
@@ -241,9 +250,9 @@ def ucitajVideo(rez,sumaSviVid): # osnova programa, ucitavanje klipa  prolazak k
             listaVrednosti = pronadjiBroj(brojac, frejm,oz)
            
             
-            uzmiBroj(listaVrednosti,brojac,frejm,brojevi,oz) # najbitnije da postavlja vrednost broja 
+            uzmiBroj(listaVrednosti,brojac,frejm,listaCifara,oz) # najbitnije da postavlja vrednost broja
            
-            suma=  presekIZbir(brojevi,brojac,mojaLinija,zbir,rez)
+            suma=  presekIZbir(listaCifara,brojac,mojaLinija,zbir,rez)
             zbir = suma;
            
             #ispis za jednu sliku
@@ -360,38 +369,42 @@ def urediSliku(pomFrejm) :
     return ret, slika;
 
 
-def uzmiBroj(listaVrednosti,brojac,frejm,brojevi,oz): #kroz listu pronadjenih brojeva prati pomeranje kroz funkcije najblizi prvi i drugi , 
+def uzmiBroj(listaVrednosti,brojac,frejm,listaCifara,oz): #kroz listu pronadjenih brojeva prati pomeranje kroz funkcije najblizi prvi i drugi ,
     #poredi pozicije centra prosle i sadasnje zakljucuje koji je broj u pitanju
     
     for cifra in listaVrednosti:
-        brProsli = najblizi(cifra,brojevi)
+        brProsli = nadjiCentar(cifra,listaCifara)
         
         brZaObradu = len(brProsli)
         if brZaObradu ==0:
             oz = oz +1;
             cifra[0] = oz
             cifra[4] = False # sabran
-            brojevi.append(cifra);
+            listaCifara.append(cifra);
         #sta ako je vise od jednog ? 
         elif brZaObradu==1:#    oznaka = [oz,(koordX+(sirina/2,koordY+(visina/2))), [visina,sirina],isecSlika,sabran,brojac]
             brProsli[0][1] = cifra[1]
             brProsli[0][5] = brojac
     
-def najblizi(cifra, brojevi):   # gledamo pomeranje centra i trazimo najbiliz da ga prihvatimo ko isti  broj
-    prolaziBr = []
-    for  h  in brojevi:
-        if(distance(h[1],cifra[1])<15):
-            prolaziBr.append(h)
-          
+def nadjiCentar(cifra, listaCifara):   # gledamo pomeranje centra i trazimo najbiliz da ga prihvatimo ko isti  broj
+
+    prolaziBr = ubaciUlistuVazecih(cifra,listaCifara)
+
     if len(prolaziBr)>1 : 
                 
-        return najbliziDrugi(cifra,prolaziBr)
+        return nadjiViseCentara(cifra,prolaziBr)
     else:
         return prolaziBr # vracamo ako je nasao broj koji je blizu centra ako ne vracamo prazno i tamo unosimo novi broj
 
+def ubaciUlistuVazecih(cifra,listaCifara):
+    prolaziBr = []
+    for  h  in listaCifara:
+        if(distance(h[1],cifra[1])<15):
+            prolaziBr.append(h)
 
+    return prolaziBr
 
-def najbliziDrugi(cifra, prolaziBr): # za niz brojeva koji su blizu trazimo najblizi
+def nadjiViseCentara(cifra, prolaziBr): # za niz brojeva koji su blizu trazimo najblizi
     minRastojanje = distance(cifra[1],prolaziBr[0][1])
     trenutniNaj = prolaziBr[0]
     nizNajblizih = []       
@@ -404,10 +417,10 @@ def najbliziDrugi(cifra, prolaziBr): # za niz brojeva koji su blizu trazimo najb
     nizNajblizih.append(trenutniNaj)
     return nizNajblizih
     
-def presekIZbir(brojevi,brojac,mojaLinija,zbir,rez):
+def presekIZbir(listaCifara,brojac,mojaLinija,zbir,rez):
     
     
-    for i in brojevi:
+    for i in listaCifara:
         #print "frejm -  br[5]"
         trajanjeBr = brojac - i[5]
         #print brojac
@@ -450,21 +463,20 @@ def prepoznajBroj(isecak,rez): #saljemo obucen rezultat i dobijamo predikciju za
    
     
 def upisUFajl(sumaSviVid):
-    text_file = open("out.txt", "w")
-    text_file.write("Stefan Milanovic RA66/2014 \n")
-    text_file.write("file    sum")
-    text_file.write (" \nvideo-0.avi    %d" % sumaSviVid[0]) 
-    text_file.write (" \nvideo-1.avi    %d" % sumaSviVid[1]) 
-    text_file.write (" \nvideo-2.avi    %d" % sumaSviVid[2]) 
-    text_file.write (" \nvideo-3.avi    %d" % sumaSviVid[3]) 
-    text_file.write (" \nvideo-4.avi    %d" % sumaSviVid[4]) 
-    text_file.write (" \nvideo-5.avi    %d" % sumaSviVid[5]) 
-    text_file.write (" \nvideo-6.avi    %d" % sumaSviVid[6]) 
-    text_file.write (" \nvideo-7.avi    %d" % sumaSviVid[7]) 
-    text_file.write (" \nvideo-8.avi    %d" % sumaSviVid[8]) 
-    text_file.write (" \nvideo-9.avi    %d" % sumaSviVid[9]) 
- 
-    text_file.close()
+
+        text_file = open("out.txt", "w")
+        text_file.write("Stefan Milanovic RA66/2014 \nfile\tsum")
+        text_file.write("\nvideo-0.avi\t%d" % sumaSviVid[0])
+        text_file.write("\nvideo-1.avi\t%d" % sumaSviVid[1])
+        text_file.write("\nvideo-2.avi\t%d" % sumaSviVid[2])
+        text_file.write("\nvideo-3.avi\t%d" % sumaSviVid[3])
+        text_file.write("\nvideo-4.avi\t%d" % sumaSviVid[4])
+        text_file.write("\nvideo-5.avi\t%d" % sumaSviVid[5])
+        text_file.write("\nvideo-6.avi\t%d" % sumaSviVid[6])
+        text_file.write("\nvideo-7.avi\t%d" % sumaSviVid[7])
+        text_file.write("\nvideo-8.avi\t%d" % sumaSviVid[8])
+        text_file.write("\nvideo-9.avi\t%d" % sumaSviVid[9])
+        text_file.close()
 
 sumaSviVid = [0,0,0,0,0,0,0,0,0,0]
 
