@@ -1,12 +1,12 @@
-Stefan Milanovic RA66/2014
+Stefan Milanovic RA66/2014 
 file	sum
 video-0.avi	25
-video-1.avi	61
-video-2.avi	50
-video-3.avi	67
-video-4.avi	54
-video-5.avi	75
-video-6.avi	59
+video-1.avi	58
+video-2.avi	53
+video-3.avi	61
+video-4.avi	56
+video-5.avi	61
+video-6.avi	55
 video-7.avi	79
-video-8.avi	78
+video-8.avi	63
 video-9.avi	59
