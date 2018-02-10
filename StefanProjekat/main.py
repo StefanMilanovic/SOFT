@@ -10,7 +10,6 @@ import cv2
 from PIL import Image
 from sklearn.datasets import fetch_mldata
 from sklearn.neighbors import KNeighborsClassifier
-from skimage import exposure
 from vektori import distance
 from vektori import pnt2line
 
@@ -92,10 +91,7 @@ def prilagodiSliku(noviPodaci,noviLab): # pravimo sliku koja nam odgovara za tes
         #privremeno za testiranje
 
         podatak = noviPodaci[n].reshape((28,28)).astype("uint8")
-       # exposure.rescale_intensity - Return image after stretching or shrinking its intensity levels.
-
-        podatak = exposure.rescale_intensity(podatak, out_range=(0, 255))
-        ret, image_bin = cv2.threshold(podatak, 100, 255, cv2.THRESH_BINARY) 
+        ret, image_bin = cv2.threshold(podatak, 100, 255, cv2.THRESH_BINARY)
         
         slika2 = image_bin
         dilatacija = cv2.dilate(image_bin,jezgroD,brIt)
@@ -338,8 +334,7 @@ def pronadjiBroj(brojac,frejm,oz): # sa originalnog frejma pravimo istu sliku za
           koordX,koordY,sirina,visina = cv2.boundingRect(kk); 
           isecSlika2=isecSlika[koordY:koordY+visina,koordX :koordX+sirina];
           
-          #pocetnaSlika = cv2.rectangle(pocetnaSlika,(koordX,koordY),(koordX+sirina,koordY+visina),(0,0,255),2)
-          #zaokruzi kako sta nadjes
+
          
          # cv2.imshow('image',isecSlika2)      
          # cv2.waitKey(0)
@@ -377,14 +372,15 @@ def uzmiBroj(listaVrednosti,brojac,frejm,listaCifara,oz): #kroz listu pronadjeni
         
         brZaObradu = len(brProsli)
         if brZaObradu ==0:
+            cifra[4] = False  # sabran
             oz = oz +1;
             cifra[0] = oz
-            cifra[4] = False # sabran
+
             listaCifara.append(cifra);
-        #sta ako je vise od jednog ? 
         elif brZaObradu==1:#    oznaka = [oz,(koordX+(sirina/2,koordY+(visina/2))), [visina,sirina],isecSlika,sabran,brojac]
-            brProsli[0][1] = cifra[1]
+
             brProsli[0][5] = brojac
+            brProsli[0][1] = cifra[1]
     
 def nadjiCentar(cifra, listaCifara):   # gledamo pomeranje centra i trazimo najbiliz da ga prihvatimo ko isti  broj
 
@@ -426,7 +422,7 @@ def presekIZbir(listaCifara,brojac,mojaLinija,zbir,rez):
         #print brojac
         #print i[5]
         if(trajanjeBr <5):#centar broj i koordinate linije          min x min y   max x max y
-            razdaljinaBrLin = pnt2line(i[1],(mojaLinija[1][0],mojaLinija[1][1]),(mojaLinija[2][0],mojaLinija[2][1]))
+            razdaljinaBrLin,visak123,visak456 = pnt2line(i[1],(mojaLinija[1][0],mojaLinija[1][1]),(mojaLinija[2][0],mojaLinija[2][1]))
             #
             
             if( not i[4] and razdaljinaBrLin <10):
